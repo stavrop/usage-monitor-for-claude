@@ -1,0 +1,23 @@
+# Build artifacts
+*.app/
+ClaudeUsage.app/
+*.o
+*.dSYM/
+*.swiftmodule
+
+# macOS
+.DS_Store
+
+# Logs / local
+/tmp/claudeusage.*.log
+*.log
+
+# Secrets — never commit tokens or signing keys
+*.token
+*.p8
+*.p12
+.env
+.env.*
+
+# Local LaunchAgent with a machine-specific absolute path
+launchd/*.local.plist

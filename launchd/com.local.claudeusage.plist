@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.local.claudeusage</string>
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Replace with the ABSOLUTE path to the built binary, e.g.
+             /Users/you/usage-monitor-for-claude/ClaudeUsage.app/Contents/MacOS/ClaudeUsage -->
+        <string>__APP_BINARY_PATH__</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/claudeusage.err.log</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/claudeusage.out.log</string>
+</dict>
+</plist>
