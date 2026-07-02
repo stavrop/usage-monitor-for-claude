@@ -15,7 +15,7 @@
 # https://docs.brew.sh/Acceptable-Casks#rejected-casks
 cask "usage-monitor-for-claude" do
   version "0.1.0"
-  sha256 "REPLACE_WITH_ZIP_SHA256"
+  sha256 "18c397c46b2156b624bbf55e56ee616b0adad071f92d74b9198dcaafb2423d5e"
 
   url "https://github.com/stavrop/usage-monitor-for-claude/releases/download/v#{version}/ClaudeUsage.zip"
   name "Usage Monitor for Claude"
