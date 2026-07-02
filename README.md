@@ -57,6 +57,10 @@ cd usage-monitor-for-claude
 open ClaudeUsage.app
 ```
 
+When iterating with the app installed as a login item, use
+`./rebuild-and-restart.sh` — it stops the running instance before rebuilding, so
+macOS doesn't kill the new build for a code-signature mismatch, then relaunches it.
+
 > A source build is **unsigned**. macOS runs a locally-built app fine, but if you
 > copy it to another Mac, remove the quarantine flag first:
 > `xattr -dr com.apple.quarantine ClaudeUsage.app`. For distributable, notarized
