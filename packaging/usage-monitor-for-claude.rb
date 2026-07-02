@@ -22,7 +22,7 @@ cask "usage-monitor-for-claude" do
   desc "Menu bar app showing Claude session and weekly usage"
   homepage "https://github.com/stavrop/usage-monitor-for-claude"
 
-  depends_on macos: ">= :monterey"
+  depends_on macos: :monterey
 
   app "ClaudeUsage.app"
 
