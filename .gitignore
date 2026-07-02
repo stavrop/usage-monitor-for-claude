@@ -1,6 +1,7 @@
-# Build artifacts
+# Build artifacts — release binaries live in GitHub Releases, never in the tree
 *.app/
 ClaudeUsage.app/
+*.zip
 *.o
 *.dSYM/
 *.swiftmodule

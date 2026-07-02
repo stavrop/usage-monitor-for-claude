@@ -33,15 +33,15 @@ crosses 90%.
 
 ### Download a release (recommended)
 
-Grab the latest `ClaudeUsage.zip` from the
-[**Releases**](https://github.com/stavrop/usage-monitor-for-claude/releases) page,
-unzip it, and drag `ClaudeUsage.app` to `/Applications`. Release builds are
-signed with a Developer ID and notarized by Apple, so they open normally — no
-Gatekeeper override needed.
+Pre-built binaries live on the **[Releases page](https://github.com/stavrop/usage-monitor-for-claude/releases/latest)**
+(the "Releases" section of the repo — a separate tab, not a folder in the file
+list). Download `ClaudeUsage.zip` from the latest release, unzip it, and drag
+`ClaudeUsage.app` to `/Applications`.
+
+Release builds are signed with a Developer ID and notarized by Apple, so they
+open normally — no Gatekeeper override needed.
 
 ### Homebrew
-
-Once a tap is published:
 
 ```sh
 brew tap stavrop/tap
