@@ -357,6 +357,89 @@ final class TipJarController: NSObject {
     }
 }
 
+// MARK: - Usage row (custom menu view with a colored bar)
+
+/// A menu row for one usage bucket: label + percent on top, a rounded colored
+/// progress bar below, and the reset time as subtext. Colors ramp with severity
+/// (green → amber → red) so a nearly-exhausted bucket reads at a glance.
+final class UsageRowView: NSView {
+    private let label: String
+    private let percent: Int
+    private let resetText: String
+
+    init(label: String, percent: Int, resetText: String) {
+        self.label = label
+        self.percent = max(0, min(100, percent))
+        self.resetText = resetText
+        super.init(frame: NSRect(x: 0, y: 0, width: 268, height: 52))
+        autoresizingMask = [.width]
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
+
+    override var isFlipped: Bool { true }
+
+    private func severityColors() -> (fillStart: NSColor, fillEnd: NSColor, text: NSColor) {
+        if percent >= ALERT_THRESHOLD {
+            return (NSColor(srgbRed: 1.00, green: 0.48, blue: 0.42, alpha: 1),
+                    NSColor(srgbRed: 1.00, green: 0.30, blue: 0.43, alpha: 1),
+                    NSColor(srgbRed: 0.95, green: 0.33, blue: 0.40, alpha: 1))
+        } else if percent >= 50 {
+            return (NSColor(srgbRed: 1.00, green: 0.82, blue: 0.40, alpha: 1),
+                    NSColor(srgbRed: 0.96, green: 0.64, blue: 0.35, alpha: 1),
+                    NSColor(srgbRed: 0.86, green: 0.56, blue: 0.15, alpha: 1))
+        } else {
+            return (NSColor(srgbRed: 0.22, green: 0.85, blue: 0.54, alpha: 1),
+                    NSColor(srgbRed: 0.18, green: 0.77, blue: 0.71, alpha: 1),
+                    NSColor(srgbRed: 0.15, green: 0.66, blue: 0.44, alpha: 1))
+        }
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let padL: CGFloat = 14, padR: CGFloat = 14
+        let w = bounds.width
+        let colors = severityColors()
+
+        // Label (top-left)
+        let labelAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .foregroundColor: NSColor.labelColor,
+        ]
+        (label as NSString).draw(at: NSPoint(x: padL, y: 7), withAttributes: labelAttrs)
+
+        // Percent (top-right), tinted to match severity
+        let pctAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .bold),
+            .foregroundColor: colors.text,
+        ]
+        let pctStr = "\(percent)%" as NSString
+        let pctSize = pctStr.size(withAttributes: pctAttrs)
+        pctStr.draw(at: NSPoint(x: w - padR - pctSize.width, y: 7), withAttributes: pctAttrs)
+
+        // Bar track
+        let barH: CGFloat = 6, barY: CGFloat = 26
+        let track = NSRect(x: padL, y: barY, width: w - padL - padR, height: barH)
+        NSColor.tertiaryLabelColor.withAlphaComponent(0.35).setFill()
+        NSBezierPath(roundedRect: track, xRadius: barH / 2, yRadius: barH / 2).fill()
+
+        // Bar fill (rounded, gradient), clipped to its own rounded rect
+        let fillW = track.width * CGFloat(percent) / 100.0
+        if fillW > 0.5 {
+            let fillRect = NSRect(x: track.minX, y: track.minY, width: max(fillW, barH), height: barH)
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(roundedRect: fillRect, xRadius: barH / 2, yRadius: barH / 2).addClip()
+            NSGradient(starting: colors.fillStart, ending: colors.fillEnd)?.draw(in: fillRect, angle: 0)
+            NSGraphicsContext.restoreGraphicsState()
+        }
+
+        // Reset subtext
+        let subAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 11),
+            .foregroundColor: NSColor.secondaryLabelColor,
+        ]
+        (resetText as NSString).draw(at: NSPoint(x: padL, y: 35), withAttributes: subAttrs)
+    }
+}
+
 // MARK: - App
 
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -489,6 +572,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(item)
             }
 
+            func bucket(_ label: String, _ limit: Limit) {
+                let item = NSMenuItem()
+                item.isEnabled = false
+                item.view = UsageRowView(label: label, percent: limit.percent,
+                                         resetText: "resets \(fmtReset(limit.resetsAt))")
+                menu.addItem(item)
+            }
+
             if let err = self.lastError {
                 header("⚠️ \(err)")
                 menu.addItem(.separator())
@@ -496,24 +587,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             if let u = self.lastUsage {
                 if let s = u.session {
-                    header("Session   \(s.percent)%")
-                    let sub = NSMenuItem(title: "   resets \(fmtReset(s.resetsAt))", action: nil, keyEquivalent: "")
-                    sub.isEnabled = false
-                    menu.addItem(sub)
+                    bucket("Session", s)
                 }
                 menu.addItem(.separator())
                 if let w = u.weeklyAll {
-                    header("Weekly (all)   \(w.percent)%")
-                    let sub = NSMenuItem(title: "   resets \(fmtReset(w.resetsAt))", action: nil, keyEquivalent: "")
-                    sub.isEnabled = false
-                    menu.addItem(sub)
+                    bucket("Weekly (all)", w)
                 }
                 if let ws = u.weeklyScoped {
-                    let name = u.scopedName ?? "scoped"
-                    header("Weekly (\(name))   \(ws.percent)%")
-                    let sub = NSMenuItem(title: "   resets \(fmtReset(ws.resetsAt))", action: nil, keyEquivalent: "")
-                    sub.isEnabled = false
-                    menu.addItem(sub)
+                    bucket("Weekly (\(u.scopedName ?? "scoped"))", ws)
                 }
                 menu.addItem(.separator())
             }
