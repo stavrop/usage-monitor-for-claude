@@ -8,9 +8,11 @@ A tiny macOS **menu bar** app that shows your Claude **session** (5-hour) and
 ⛏ 67% · 4h12m
 ```
 
-Click the menu bar item for a breakdown (session, weekly-all, weekly per-model)
-and each bucket's reset time. It notifies you once per window when a bucket
-crosses 90%.
+Click the menu bar item for a breakdown — session, weekly-all, and per-model
+weekly — where each bucket is a colored gradient bar (green → amber → red as it
+fills) with its reset time. If you have pay-as-you-go credits, a
+**Credits (monthly)** row shows what you've used, what's left, and the monthly
+cap in dollars. It notifies you once per window when a bucket crosses 90%.
 
 > **Unofficial project — not affiliated with Anthropic.** This is an independent
 > utility, not affiliated with, endorsed by, or sponsored by Anthropic. "Claude",
@@ -109,8 +111,9 @@ anthropic-beta: oauth-2025-04-20
 ```
 
 Relevant fields: `five_hour` (session) and `seven_day` (weekly), each with a
-utilization percentage and `resets_at`; plus a `limits[]` array carrying
-per-model scoped weekly buckets.
+utilization percentage and `resets_at`; a `limits[]` array carrying per-model
+scoped weekly buckets; and a `spend` block with the pay-as-you-go credit balance
+(`used`/`limit` in minor currency units).
 
 Nothing is stored except what Claude Code already keeps in your Keychain, and the
 token is sent only to Anthropic's own hosts.

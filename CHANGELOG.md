@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Colored gradient usage bars** in the dropdown. Each bucket (session,
+  weekly-all, per-model weekly) now renders as a rounded progress bar that ramps
+  green → amber → red with severity, instead of a plain text percentage row.
+- **Pay-as-you-go credit balance.** A **Credits (monthly)** row shows what you've
+  used, what's remaining, and the monthly cap in dollars, behind the same
+  severity-colored bar. Parsed from the usage endpoint's `spend` block (with a
+  fallback to the legacy `extra_usage` field). The API exposes no reset timestamp
+  for credits, so the row is labeled monthly rather than showing a countdown.
+
 ## [0.1.0] - 2026-07-02
 
 ### Added

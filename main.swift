@@ -19,11 +19,23 @@ struct Limit {
     let resetsAt: Date?
 }
 
+/// Pay-as-you-go usage credits ("extra usage") that cover you past plan limits.
+/// A monthly-capped dollar balance; the API exposes used/limit but no reset time.
+struct Credit {
+    let usedMinor: Int
+    let limitMinor: Int
+    let currency: String
+    let exponent: Int
+    let percent: Int
+    var remainingMinor: Int { max(0, limitMinor - usedMinor) }
+}
+
 struct Usage {
     let session: Limit?
     let weeklyAll: Limit?
     let weeklyScoped: Limit?      // e.g. Sonnet/Opus scoped weekly
     let scopedName: String?
+    let credit: Credit?
 }
 
 // MARK: - Credentials (Keychain)
@@ -154,6 +166,42 @@ func parseLimit(_ d: [String: Any]?) -> Limit? {
     return Limit(percent: p, resetsAt: parseDate(d["resets_at"]))
 }
 
+/// Parse pay-as-you-go credits. Prefers the newer `spend` block (money with
+/// minor units); falls back to legacy `extra_usage` (whole credits). Returns nil
+/// when credits aren't enabled or there's no positive cap to show.
+func parseCredit(_ obj: [String: Any]) -> Credit? {
+    if let spend = obj["spend"] as? [String: Any] {
+        let enabled = (spend["enabled"] as? Bool) ?? true
+        if enabled,
+           let used = spend["used"] as? [String: Any],
+           let limit = spend["limit"] as? [String: Any],
+           let usedMinor = (used["amount_minor"] as? NSNumber)?.intValue,
+           let limitMinor = (limit["amount_minor"] as? NSNumber)?.intValue,
+           limitMinor > 0 {
+            let currency = (limit["currency"] as? String) ?? (used["currency"] as? String) ?? "USD"
+            let exponent = (limit["exponent"] as? NSNumber)?.intValue
+                ?? (used["exponent"] as? NSNumber)?.intValue ?? 2
+            let percent = (spend["percent"] as? NSNumber)?.intValue
+                ?? Int((Double(usedMinor) / Double(limitMinor) * 100).rounded())
+            return Credit(usedMinor: usedMinor, limitMinor: limitMinor,
+                          currency: currency, exponent: exponent, percent: percent)
+        }
+    }
+    // Legacy fallback: extra_usage reports whole credits (no minor units).
+    if let ex = obj["extra_usage"] as? [String: Any],
+       (ex["is_enabled"] as? Bool) ?? false,
+       let limit = (ex["monthly_limit"] as? NSNumber)?.intValue, limit > 0 {
+        let used = (ex["used_credits"] as? NSNumber)?.intValue ?? 0
+        let currency = (ex["currency"] as? String) ?? "USD"
+        let exponent = (ex["decimal_places"] as? NSNumber)?.intValue ?? 2
+        let percent = (ex["utilization"] as? NSNumber)?.intValue
+            ?? Int((Double(used) / Double(limit) * 100).rounded())
+        return Credit(usedMinor: used, limitMinor: limit,
+                      currency: currency, exponent: exponent, percent: percent)
+    }
+    return nil
+}
+
 func fetchUsage(token: String, completion: @escaping (Result<Usage, Error>) -> Void) {
     var req = URLRequest(url: URL(string: USAGE_URL)!)
     req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -203,8 +251,10 @@ func fetchUsage(token: String, completion: @escaping (Result<Usage, Error>) -> V
             completion(.failure(NSError(domain: "parse", code: -2,
                 userInfo: [NSLocalizedDescriptionKey: "empty usage response"]))); return
         }
+        let credit = parseCredit(obj)
         completion(.success(Usage(session: session, weeklyAll: weeklyAll,
-                                  weeklyScoped: weeklyScoped, scopedName: scopedName)))
+                                  weeklyScoped: weeklyScoped, scopedName: scopedName,
+                                  credit: credit)))
     }.resume()
 }
 
@@ -248,6 +298,18 @@ func fmtReset(_ date: Date?) -> String {
         df.dateFormat = "EEE h:mm a"
     }
     return "in \(rel) (\(df.string(from: date)))"
+}
+
+/// Format a minor-unit money amount (e.g. 429, exp 2 → "$4.29") using the
+/// currency's locale-appropriate symbol.
+func fmtMoney(_ minor: Int, currency: String, exponent: Int) -> String {
+    let value = Double(minor) / pow(10.0, Double(exponent))
+    let f = NumberFormatter()
+    f.numberStyle = .currency
+    f.currencyCode = currency
+    f.maximumFractionDigits = exponent
+    f.minimumFractionDigits = exponent
+    return f.string(from: NSNumber(value: value)) ?? "\(value) \(currency)"
 }
 
 // MARK: - Notifications
@@ -595,6 +657,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 if let ws = u.weeklyScoped {
                     bucket("Weekly (\(u.scopedName ?? "scoped"))", ws)
+                }
+                if let c = u.credit {
+                    menu.addItem(.separator())
+                    let used = fmtMoney(c.usedMinor, currency: c.currency, exponent: c.exponent)
+                    let left = fmtMoney(c.remainingMinor, currency: c.currency, exponent: c.exponent)
+                    let cap = fmtMoney(c.limitMinor, currency: c.currency, exponent: c.exponent)
+                    let item = NSMenuItem()
+                    item.isEnabled = false
+                    item.view = UsageRowView(label: "Credits (monthly)", percent: c.percent,
+                                             resetText: "\(used) used · \(left) left of \(cap)")
+                    menu.addItem(item)
                 }
                 menu.addItem(.separator())
             }
