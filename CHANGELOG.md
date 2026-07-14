@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-14
+
 ### Added
 - **Colored gradient usage bars** in the dropdown. Each bucket (session,
   weekly-all, per-model weekly) now renders as a rounded progress bar that ramps
@@ -33,5 +35,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign + notarize + staple), launch-at-login template, and an original
   CoreGraphics app icon.
 
-[Unreleased]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/stavrop/usage-monitor-for-claude/releases/tag/v0.1.0
