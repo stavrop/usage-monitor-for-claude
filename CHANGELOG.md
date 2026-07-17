@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-17
+
+### Fixed
+- **Rate-limit (HTTP 429) resilience.** The usage endpoint sits behind an edge
+  rate limiter that returns `429` with a `Retry-After` hint. The app now parses
+  `Retry-After` (seconds or HTTP-date), keeps the last-good numbers on screen,
+  and schedules a single backoff retry that waits **at least** as long as the
+  server asks — so it no longer polls back into an open window and keeps it
+  armed. Without a server hint it falls back to exponential backoff (30s → 30m
+  cap) with jitter to decorrelate from other clients on the same account. A
+  successful fetch clears the backoff. Previously any non-2xx just showed
+  "Last refresh failed" until the next 10-minute poll, with no `Retry-After`
+  handling.
+
 ## [0.2.0] - 2026-07-14
 
 ### Added
@@ -35,6 +49,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sign + notarize + staple), launch-at-login template, and an original
   CoreGraphics app icon.
 
-[Unreleased]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/stavrop/usage-monitor-for-claude/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/stavrop/usage-monitor-for-claude/releases/tag/v0.1.0
