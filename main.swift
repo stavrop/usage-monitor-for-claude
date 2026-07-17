@@ -202,6 +202,29 @@ func parseCredit(_ obj: [String: Any]) -> Credit? {
     return nil
 }
 
+/// A non-2xx HTTP response from the usage/token endpoints. Carries the status
+/// and, for 429/503, the server's `Retry-After` hint so the caller can back off
+/// for exactly as long as asked instead of guessing.
+struct HTTPError: Error, LocalizedError {
+    let status: Int
+    let retryAfter: TimeInterval?
+    var errorDescription: String? { "HTTP \(status)" }
+}
+
+/// Parse an HTTP `Retry-After` header. It may be a delay in seconds ("120") or
+/// an absolute HTTP-date ("Wed, 21 Oct 2026 07:28:00 GMT"). Returns the number
+/// of seconds to wait, or nil if absent/unparseable.
+func parseRetryAfter(_ value: String?) -> TimeInterval? {
+    guard let v = value?.trimmingCharacters(in: .whitespaces), !v.isEmpty else { return nil }
+    if let secs = Double(v) { return max(0, secs) }
+    let fmt = DateFormatter()
+    fmt.locale = Locale(identifier: "en_US_POSIX")
+    fmt.timeZone = TimeZone(identifier: "GMT")
+    fmt.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+    if let date = fmt.date(from: v) { return max(0, date.timeIntervalSince(Date())) }
+    return nil
+}
+
 func fetchUsage(token: String, completion: @escaping (Result<Usage, Error>) -> Void) {
     var req = URLRequest(url: URL(string: USAGE_URL)!)
     req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -212,12 +235,13 @@ func fetchUsage(token: String, completion: @escaping (Result<Usage, Error>) -> V
             completion(.failure(CredError.badFormat)); return
         }
         if http.statusCode == 401 {
-            completion(.failure(NSError(domain: "auth", code: 401))); return
+            completion(.failure(HTTPError(status: 401, retryAfter: nil))); return
         }
         guard (200...299).contains(http.statusCode) else {
-            // e.g. 429 rate limit, 5xx — a real failure, not empty data.
-            completion(.failure(NSError(domain: "http", code: http.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: "HTTP \(http.statusCode)"]))); return
+            // e.g. 429 rate limit, 5xx — a real failure, not empty data. Capture
+            // the server's Retry-After so the caller can back off precisely.
+            let ra = parseRetryAfter(http.value(forHTTPHeaderField: "Retry-After"))
+            completion(.failure(HTTPError(status: http.statusCode, retryAfter: ra))); return
         }
         guard let data = data,
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -512,6 +536,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var lastUsage: Usage?
     var lastUpdated: Date?
     var lastError: String?
+    // Rate-limit backoff: consecutive transient failures (429/5xx) and the pending
+    // one-off retry. Both are only ever touched on the main queue.
+    var backoffAttempt = 0
+    var retryWork: DispatchWorkItem?
     // Tracks the reset time we last alerted for, per bucket, so we fire once
     // per window and re-arm automatically after each reset.
     var alertedFor: [String: Date] = [:]
@@ -572,6 +600,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         rebuildMenu()
     }
 
+    /// Clear the rate-limit backoff after a successful fetch: reset the attempt
+    /// counter and cancel any pending retry so we return to the normal cadence.
+    func clearBackoff() {
+        DispatchQueue.main.async {
+            self.backoffAttempt = 0
+            self.retryWork?.cancel()
+            self.retryWork = nil
+        }
+    }
+
+    /// Schedule a single retry after a 429/5xx. When the server sends Retry-After
+    /// we wait AT LEAST that long (+ small jitter) — never less, or we'd hammer the
+    /// window and keep it armed. Without it, exponential backoff (30s, 60s, 120s, …
+    /// capped at 30m) with jitter to decorrelate from other clients on the same
+    /// account. An absolute 2h ceiling guards against an absurd server value. The
+    /// steady poll timer keeps running underneath, so this only ever fetches sooner
+    /// than the next scheduled poll — never piles extra load on a rate limit.
+    func scheduleBackoffRetry(retryAfter: TimeInterval?, label: String) {
+        DispatchQueue.main.async {
+            self.backoffAttempt += 1
+            let hardCeiling: TimeInterval = 7200   // 2h absolute sanity bound
+            let delay: TimeInterval
+            if let ra = retryAfter {
+                // Honor the server exactly; add a little jitter on TOP, never below.
+                delay = min(hardCeiling, ra + Double.random(in: 0...15))
+            } else {
+                let expo = min(1800, 30 * pow(2.0, Double(self.backoffAttempt - 1)))
+                delay = expo + Double.random(in: 0...(max(1, expo) * 0.25))
+            }
+            let secs = Int(delay.rounded())
+            let pretty = secs >= 60 ? "\(secs / 60)m\(secs % 60)s" : "\(secs)s"
+            self.softError("Rate-limited (\(label)); retrying in \(pretty)")
+            self.retryWork?.cancel()
+            let work = DispatchWorkItem { [weak self] in self?.refresh() }
+            self.retryWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+        }
+    }
+
     func refresh() {
         let creds: Credentials
         do { creds = try readCredentials() }
@@ -597,6 +664,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self = self else { return }
             switch result {
             case .success(let usage):
+                self.clearBackoff()
                 self.lastUsage = usage
                 self.lastUpdated = Date()
                 self.lastError = nil
@@ -606,18 +674,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.maybeAlert("session", usage.session)
                 self.maybeAlert("weekly", usage.weeklyAll)
             case .failure(let err):
-                let ns = err as NSError
-                if ns.code == 401 {
-                    // Try a refresh once on hard auth failure.
-                    if let creds = try? readCredentials() {
-                        refreshToken(creds) { updated in
-                            if let updated = updated { self.loadUsage(token: updated.accessToken) }
-                            else { self.softError("Auth failed (401)") }
+                if let http = err as? HTTPError {
+                    if http.status == 401 {
+                        // Try a refresh once on hard auth failure.
+                        if let creds = try? readCredentials() {
+                            refreshToken(creds) { updated in
+                                if let updated = updated { self.loadUsage(token: updated.accessToken) }
+                                else { self.softError("Auth failed (401)") }
+                            }
+                            return
                         }
+                    }
+                    // Rate-limited (429) or a transient server error (5xx): keep the
+                    // last-good numbers on screen and schedule a backoff retry that
+                    // honors Retry-After, instead of waiting the full poll interval.
+                    if http.status == 429 || (500...599).contains(http.status) {
+                        self.scheduleBackoffRetry(retryAfter: http.retryAfter, label: "HTTP \(http.status)")
                         return
                     }
                 }
-                self.softError("Last refresh failed: \(ns.localizedDescription)")
+                self.softError("Last refresh failed: \((err as NSError).localizedDescription)")
             }
             self.rebuildMenu()
         }
