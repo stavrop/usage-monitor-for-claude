@@ -138,6 +138,13 @@ The icon is original — a usage-gauge mark drawn from scratch with CoreGraphics
 swift tools/make_icon.swift icon_1024.png
 ```
 
+## Privacy, terms & security
+
+This app has no servers and collects nothing — it reads the Claude Code login
+already on your Mac and talks only to Anthropic. See [PRIVACY.md](PRIVACY.md),
+[TERMS.md](TERMS.md), and [SECURITY.md](SECURITY.md). Contributions welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 [Apache License 2.0](LICENSE) © 2026 Georgios Stavropoulos. See also [NOTICE](NOTICE).

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage Monitor for Claude — Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#1c1c1e; background:#fff; }
+  @media (prefers-color-scheme: dark){ body{ color:#e7e7ea; background:#0b0b0d; } }
+  .wrap{ max-width:720px; margin:0 auto; padding:44px 24px 80px; }
+  a{ color:#0a66ff; } @media (prefers-color-scheme: dark){ a{ color:#6ea8fe; } }
+  .brand{ display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:17px; color:inherit; text-decoration:none; }
+  .glyph{ width:26px; height:26px; border-radius:7px; background:linear-gradient(135deg,#d97757,#d97757aa); display:inline-flex; align-items:center; justify-content:center; font-size:14px; }
+  h1{ font-size:28px; margin:30px 0 2px; }
+  .updated{ color:#8a8a8e; font-size:14px; margin:0 0 26px; }
+  h2{ font-size:18px; margin:30px 0 8px; }
+  .lead{ font-size:17px; }
+  code{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:rgba(127,127,127,.16); padding:2px 6px; border-radius:5px; font-size:.9em; }
+  footer{ margin-top:52px; padding-top:18px; border-top:1px solid rgba(127,127,127,.25); font-size:14px; color:#8a8a8e; }
+  footer a{ color:inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="./"><span class="glyph">⛏</span> Usage Monitor for Claude</a>
+
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated 29 July 2026</p>
+
+  <p class="lead"><strong>This app has no servers and collects nothing.</strong>
+  Everything happens on your Mac, and the only service it talks to is Anthropic,
+  reusing the Claude Code login you already have.</p>
+
+  <h2>Scope</h2>
+  <p>This policy covers the Usage Monitor for Claude macOS app (“the app”),
+  distributed at
+  <a href="https://github.com/stavrop/usage-monitor-for-claude">github.com/stavrop/usage-monitor-for-claude</a>
+  and via the <code>stavrop/tap</code> Homebrew tap.</p>
+
+  <h2>What the app collects</h2>
+  <p><strong>Nothing — for the developer.</strong> There is no server, no analytics,
+  no telemetry, no crash reporting, no tracking, and no account with the developer.
+  The developer never receives your credentials or your usage data. The app runs
+  entirely on your Mac and communicates <strong>only with Anthropic's servers</strong>
+  to read your usage.</p>
+
+  <h2>Credentials it uses</h2>
+  <ul>
+    <li>The app reads the OAuth credential that <strong>Claude Code</strong> already
+    stores in your login <strong>Keychain</strong> (item <code>Claude Code-credentials</code>).
+    It refreshes the access token when it expires and writes it back to that same
+    item.</li>
+    <li>That token is sent <strong>only to Anthropic's own hosts</strong>
+    (<code>api.anthropic.com</code>, <code>platform.claude.com</code>) to read your
+    usage — never anywhere else, and never to the developer.</li>
+  </ul>
+
+  <h2>Data stored locally on your Mac</h2>
+  <ul>
+    <li>The Claude Code credential lives in your login Keychain and belongs to
+    Claude Code; the app reads and refreshes it but keeps no separate copy.</li>
+    <li><strong>App preferences</strong> (macOS user defaults): non-personal
+    settings only, such as whether the tip-jar item is hidden.</li>
+    <li>Your usage numbers are fetched live from Anthropic and shown in the menu;
+    the app keeps no database of them.</li>
+  </ul>
+
+  <h2>Third parties</h2>
+  <ul>
+    <li><strong>Anthropic.</strong> Usage data is processed by Anthropic under
+    <a href="https://www.anthropic.com/legal/privacy">Anthropic's Privacy Policy</a>.
+    This app is not affiliated with Anthropic.</li>
+    <li><strong>Optional links.</strong> If you click a tip-jar link or open the
+    project on GitHub, your browser opens that site, each with its own privacy
+    policy. The app shares no data with them.</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>The app is not directed at children and collects no personal information from
+  anyone.</p>
+
+  <h2>Changes</h2>
+  <p>This policy may change; updates are published here with a new “last updated”
+  date.</p>
+
+  <h2>Contact</h2>
+  <p>Questions or concerns: open an issue at
+  <a href="https://github.com/stavrop/usage-monitor-for-claude/issues">github.com/stavrop/usage-monitor-for-claude/issues</a>.</p>
+
+  <footer>
+    <a href="./">Usage Monitor for Claude</a> &middot;
+    <a href="terms.html">Terms of Service</a> &middot;
+    <a href="https://github.com/stavrop/usage-monitor-for-claude">GitHub</a>
+  </footer>
+</div>
+</body>
+</html>
