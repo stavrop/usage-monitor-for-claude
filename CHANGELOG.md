@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-29
+
+### Added
+- Menu items: **Star on GitHub**, **Privacy Policy**, and **Terms of Service**.
+- The support window now also invites a GitHub star (alongside the tip jar).
+- Privacy Policy and Terms of Service pages (GitHub Pages) + a README screenshot.
+
 ## [0.2.1] - 2026-07-17
 
 ### Fixed

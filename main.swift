@@ -7,6 +7,10 @@ let KEYCHAIN_SERVICE = "Claude Code-credentials"
 let KEYCHAIN_ACCOUNT = NSUserName()
 let USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
 let TOKEN_URL = "https://platform.claude.com/v1/oauth/token"
+
+let GITHUB_URL  = "https://github.com/stavrop/usage-monitor-for-claude"
+let PRIVACY_URL = "https://stavrop.github.io/usage-monitor-for-claude/privacy.html"
+let TERMS_URL   = "https://stavrop.github.io/usage-monitor-for-claude/terms.html"
 // Public Claude Code OAuth client id.
 let OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 let REFRESH_INTERVAL: TimeInterval = 600   // 10 min; keep polling light to avoid rate limits (usage windows are 5h/7d)
@@ -388,11 +392,17 @@ final class TipJarController: NSObject {
         stack.addArrangedSubview(title)
 
         let body = NSTextField(wrappingLabelWithString:
-            "It's free and open source. If it saves you a trip to the terminal, "
-            + "a small tip helps keep it maintained. Thank you! 🙏")
+            "It's free and open source. If it earns a spot in your menu bar, two "
+            + "small things help more than you'd think — a ⭐️ on GitHub (it's how "
+            + "others find it) and, if you like, a small coffee. Thank you! 🙏")
         body.alignment = .center
         body.preferredMaxLayoutWidth = 340
         stack.addArrangedSubview(body)
+
+        let starBtn = NSButton(title: "⭐️  Star on GitHub", target: self, action: #selector(openStar))
+        starBtn.bezelStyle = .rounded
+        starBtn.controlSize = .large
+        stack.addArrangedSubview(starBtn)
 
         for (i, link) in DONATION_LINKS.enumerated() {
             let b = NSButton(title: link.label, target: self, action: #selector(openLink(_:)))
@@ -419,7 +429,7 @@ final class TipJarController: NSObject {
             stack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 260),
+        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 320),
                            styleMask: [.titled, .closable], backing: .buffered, defer: false)
         win.title = "Support"
         win.contentView = container
@@ -433,6 +443,10 @@ final class TipJarController: NSObject {
         guard DONATION_LINKS.indices.contains(sender.tag),
               let url = URL(string: DONATION_LINKS[sender.tag].url) else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    @objc private func openStar() {
+        if let url = URL(string: GITHUB_URL) { NSWorkspace.shared.open(url) }
     }
 
     @objc private func dismissWindow() { window?.close() }
@@ -763,6 +777,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.addItem(support)
             }
 
+            menu.addItem(.separator())
+            let star = NSMenuItem(title: "Star on GitHub ★", action: #selector(self.openGitHub), keyEquivalent: "")
+            star.target = self
+            menu.addItem(star)
+            let privacyItem = NSMenuItem(title: "Privacy Policy", action: #selector(self.openPrivacy), keyEquivalent: "")
+            privacyItem.target = self
+            menu.addItem(privacyItem)
+            let termsItem = NSMenuItem(title: "Terms of Service", action: #selector(self.openTerms), keyEquivalent: "")
+            termsItem.target = self
+            menu.addItem(termsItem)
+
             let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
             menu.addItem(quit)
 
@@ -773,6 +798,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func manualRefresh() { refresh() }
 
     @objc func openTipJar() { tipJar.show() }
+
+    @objc func openGitHub() { NSWorkspace.shared.open(URL(string: GITHUB_URL)!) }
+    @objc func openPrivacy() { NSWorkspace.shared.open(URL(string: PRIVACY_URL)!) }
+    @objc func openTerms() { NSWorkspace.shared.open(URL(string: TERMS_URL)!) }
 }
 
 let app = NSApplication.shared

@@ -8,6 +8,10 @@ A tiny macOS **menu bar** app that shows your Claude **session** (5-hour) and
 ⛏ 67% · 4h12m
 ```
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Usage Monitor for Claude menu showing session, weekly, and credits usage" width="300">
+</p>
+
 Click the menu bar item for a breakdown — session, weekly-all, and per-model
 weekly — where each bucket is a colored gradient bar (green → amber → red as it
 fills) with its reset time. If you have pay-as-you-go credits, a
@@ -137,6 +141,18 @@ The icon is original — a usage-gauge mark drawn from scratch with CoreGraphics
 ```sh
 swift tools/make_icon.swift icon_1024.png
 ```
+
+## Support
+
+This app is free and open-source, built in spare time. If it earns a spot in your
+menu bar, two small things help more than you'd think:
+
+- ⭐️ **[Star it on GitHub](https://github.com/stavrop/usage-monitor-for-claude)** —
+  stars are how other people find it, and they genuinely make my day.
+- ☕️ **[Buy me a coffee](https://buymeacoffee.com/stavrop)** — a small tip keeps the
+  late-night maintenance caffeinated and the updates coming.
+
+No pressure at all — even telling a friend means a lot. Thank you! 🙏
 
 ## Privacy, terms & security
 
